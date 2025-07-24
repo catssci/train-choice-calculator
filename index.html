@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지하철 요금 계산기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-md mx-auto p-4">
+    <header class="mb-4 text-center">
+      <h1 class="text-2xl font-bold mb-2">지하철 요금 계산기</h1>
+      <p class="text-sm text-gray-700">일반 결제 vs. 기후동행카드 요금 비교하기</p>
+    </header>
+
+    <div id="ad-top" class="mb-4"></div>
+
+    <form id="fare-form" class="bg-white p-4 rounded shadow">
+      <div class="mb-3">
+        <label class="block font-medium mb-1">계산 방식 선택</label>
+        <div class="flex flex-wrap items-center">
+          <label class="inline-flex items-center mr-4 mb-2"><input type="radio" name="calculation-method" value="daily" class="mr-2" checked>일별</label>
+          <label class="inline-flex items-center mr-4 mb-2"><input type="radio" name="calculation-method" value="monthly" class="mr-2">월별</label>
+          <label class="inline-flex items-center mb-2"><input type="radio" name="calculation-method" value="calendar" class="mr-2">달력으로 선택</label>
+        </div>
+      </div>
+
+      <div id="daily-calculation-section">
+        <div class="mb-3">
+          <label for="daily-uses" class="block font-medium mb-1">하루 평균 이용 횟수</label>
+          <div class="flex items-center">
+            <input type="number" id="daily-uses" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="예: 2" min="1" />
+            <span class="ml-2">회</span>
+          </div>
+        </div>
+        <div class="mb-3"><label class="inline-flex items-center"><input type="checkbox" id="include-weekend" class="mr-2">주말 포함</label></div>
+        <p class="text-xs text-gray-500 mt-1">※ 주말 포함 시 30일, 미포함 시 22일 기준으로 대략적인 요금을 계산합니다.</p>
+      </div>
+
+      <div id="monthly-calculation-section" class="hidden">
+        <div class="mb-3">
+          <label for="monthly-rides" class="block font-medium mb-1">한달 총 이용 횟수</label>
+          <div class="flex items-center">
+            <input type="number" id="monthly-rides" name="monthlyRides" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="예: 44" min="1" />
+            <span class="ml-2">회</span>
+          </div>
+        </div>
+         <p class="text-xs text-gray-500 mt-1">※ 입력된 횟수를 기준으로 30일 요금을 계산합니다.</p>
+      </div>
+
+      <div id="calendar-section" class="hidden">
+        <div class="mb-3">
+          <label for="start-date" class="block font-medium mb-1">기후동행카드 시작일</label>
+          <input type="date" id="start-date" class="w-full border border-gray-300 rounded px-3 py-2">
+        </div>
+        <div id="calendar-controls" class="flex items-center justify-between mb-2">
+          <button type="button" id="prev-month" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">&lt;</button>
+          <h3 id="current-month" class="font-bold"></h3>
+          <button type="button" id="next-month" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">&gt;</button>
+        </div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+        <div class="mt-2 flex justify-between items-center">
+            <button type="button" id="weekday-commute" class="text-sm bg-green-200 px-2 py-1 rounded hover:bg-green-300">주 5일 출퇴근 (왕복)</button>
+            <p class="text-sm"><strong>30일간 총 이용 횟수:</strong> <span id="calendar-total-rides">0</span>회</p>
+        </div>
+        <div class="text-xs text-gray-500 mt-2 border-t pt-2">
+            <div class="flex items-center mb-1"><div class="w-3 h-3 bg-green-100 border mr-2"></div><span>카드 유효 기간</span></div>
+            <div class="flex items-center mb-1"><div class="w-3 h-3 bg-sky-300 border mr-2"></div><span>1회 이용</span></div>
+            <div class="flex items-center"><div class="w-3 h-3 bg-sky-500 border mr-2"></div><span>2회 이용 (왕복)</span></div>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 mt-4">계산하기</button>
+    </form>
+
+    <div id="result" class="mt-6 p-4 bg-blue-50 rounded border border-blue-200 hidden">
+      <p id="normal-cost" class="mb-1"></p>
+      <p id="climate-cost" class="mb-1"></p>
+      <p id="advice" class="font-bold mt-2"></p>
+      <button id="toggle-debug" class="text-sm text-blue-600 hover:underline mt-2">계산 과정 보기</button>
+      <div id="debug-details" class="hidden mt-3 pt-3 border-t border-blue-200 text-sm"></div>
+    </div>
+
+    <div id="ad-bottom" class="mt-4"></div>
+  </div>
+
+  <script>
+    const baseFare = 1550, climateCardMonthly = 58000;
+    let currentDate = new Date();
+    let selectedDates = {};
+    let climateCardStartDate = null;
+
+    function formatCurrency(num) { return num.toLocaleString('ko-KR') + '원'; }
+
+    function toLocalDateString(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function renderCalendar(year, month) {
+      const calendarGrid = document.getElementById('calendar-grid');
+      const currentMonthEl = document.getElementById('current-month');
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      currentMonthEl.textContent = `${year}년 ${month + 1}월`;
+      calendarGrid.innerHTML = '일월화수목금토'.split('').map(d => `<div class="font-bold text-xs">${d}</div>`).join('');
+
+      for (let i = 0; i < firstDay.getDay(); i++) calendarGrid.insertAdjacentHTML('beforeend', '<div></div>');
+
+      let endDate = null;
+      if (climateCardStartDate) {
+        endDate = new Date(climateCardStartDate.getTime());
+        endDate.setDate(endDate.getDate() + 29);
+      }
+
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day);
+        const dateString = toLocalDateString(date);
+        const dayEl = document.createElement('div');
+        dayEl.dataset.date = dateString;
+        dayEl.className = 'cursor-pointer p-1 rounded flex flex-col justify-center items-center h-10 transition-transform duration-150';
+        if (date.getDay() === 0) dayEl.classList.add('text-red-500');
+        if (date.getDay() === 6) dayEl.classList.add('text-blue-500');
+        
+        if(climateCardStartDate && date >= climateCardStartDate && date <= endDate) {
+            dayEl.classList.add('bg-green-100');
+        }
+
+        updateDayElement(dayEl);
+        calendarGrid.appendChild(dayEl);
+      }
+      updateCalendarTotalRides();
+    }
+
+    function updateDayElement(dayEl) {
+        const dayNumber = parseInt(dayEl.dataset.date.split('-')[2], 10);
+        const rides = selectedDates[dayEl.dataset.date] || 0;
+        
+        dayEl.classList.remove('bg-sky-300', 'bg-sky-500', 'text-white', 'font-bold');
+        dayEl.innerHTML = `<span>${dayNumber}</span>`;
+
+        if (rides === 1) {
+            dayEl.classList.add('bg-sky-300');
+        } else if (rides === 2) {
+            dayEl.classList.add('bg-sky-500', 'text-white', 'font-bold');
+            dayEl.innerHTML = `<span>${dayNumber}</span><span class="text-xs" style="line-height:1;">왕복</span>`;
+        }
+    }
+
+    function updateCalendarTotalRides() {
+        let total = 0;
+        if (climateCardStartDate) {
+            let endDate = new Date(climateCardStartDate.getTime());
+            endDate.setDate(endDate.getDate() + 29);
+            for(const dateStr in selectedDates) {
+                const rideDate = new Date(dateStr + 'T00:00:00');
+                if(rideDate >= climateCardStartDate && rideDate <= endDate) {
+                    total += selectedDates[dateStr];
+                }
+            }
+        } else {
+            total = Object.values(selectedDates).reduce((sum, rides) => sum + rides, 0);
+        }
+        document.getElementById('calendar-total-rides').textContent = total;
+    }
+
+    document.getElementById('start-date').addEventListener('change', e => {
+        const dateValue = e.target.value;
+        if (dateValue) {
+            climateCardStartDate = new Date(dateValue + 'T00:00:00');
+            currentDate = new Date(climateCardStartDate.getFullYear(), climateCardStartDate.getMonth(), 1);
+        } else {
+            climateCardStartDate = null;
+        }
+        renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    document.getElementById('calendar-grid').addEventListener('click', e => {
+        const dayEl = e.target.closest('[data-date]');
+        if (dayEl) {
+            const date = dayEl.dataset.date;
+            selectedDates[date] = ((selectedDates[date] || 0) + 1) % 3;
+            
+            dayEl.style.transform = 'scale(1.15)';
+            setTimeout(() => { dayEl.style.transform = 'scale(1)'; }, 150);
+
+            updateDayElement(dayEl);
+            updateCalendarTotalRides();
+        }
+    });
+    
+    document.getElementById('weekday-commute').addEventListener('click', () => {
+        if (!climateCardStartDate) {
+            alert('기후동행카드 시작일을 먼저 선택해주세요.');
+            return;
+        }
+        
+        selectedDates = {};
+        let endDate = new Date(climateCardStartDate.getTime());
+        endDate.setDate(endDate.getDate() + 29);
+
+        for (let d = new Date(climateCardStartDate.getTime()); d <= endDate; d.setDate(d.getDate() + 1)) {
+            if (d.getDay() >= 1 && d.getDay() <= 5) {
+                selectedDates[toLocalDateString(d)] = 2;
+            }
+        }
+        renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); });
+    document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); });
+
+    const sections = { daily: 'daily-calculation-section', monthly: 'monthly-calculation-section', calendar: 'calendar-section' };
+    document.querySelectorAll('input[name="calculation-method"]').forEach(radio => {
+        radio.addEventListener('change', e => {
+            Object.values(sections).forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(sections[e.target.value]).classList.remove('hidden');
+        });
+    });
+
+    document.getElementById('fare-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const method = document.querySelector('input[name="calculation-method"]:checked').value;
+      let totalRides, debugHtml = '';
+
+      if (method === 'daily') {
+        const dailyUses = parseFloat(document.getElementById('daily-uses').value);
+        if (!dailyUses || dailyUses <= 0) { alert('올바른 하루 평균 이용 횟수를 입력해주세요.'); return; }
+        const includeWeekend = document.getElementById('include-weekend').checked;
+        const days = includeWeekend ? 30 : 22;
+        totalRides = dailyUses * days;
+        debugHtml = `<p><strong>계산 방식:</strong> 일별 (하루 ${dailyUses}회, ${includeWeekend ? '주말 포함' : '주말 미포함'})</p><p><strong>월 이용일:</strong> ${days}일</p>`;
+      } else if (method === 'monthly') {
+        totalRides = parseFloat(document.getElementById('monthly-rides').value);
+        if (!totalRides || totalRides <= 0) { alert('올바른 한달 총 이용 횟수를 입력해주세요.'); return; }
+        debugHtml = `<p><strong>계산 방식:</strong> 월별</p>`;
+      } else { // calendar
+        if (!climateCardStartDate) { alert('기후동행카드 시작일을 선택해주세요.'); return; }
+        totalRides = parseInt(document.getElementById('calendar-total-rides').textContent, 10);
+        if (totalRides <= 0) { alert('달력에서 이용 날짜를 선택해주세요.'); return; }
+        let endDate = new Date(climateCardStartDate.getTime());
+        endDate.setDate(endDate.getDate() + 29);
+        debugHtml = `<p><strong>계산 방식:</strong> 달력 선택</p><p><strong>카드 유효 기간:</strong> ${climateCardStartDate.toLocaleDateString()} ~ ${endDate.toLocaleDateString()}</p>`;
+      }
+
+      const monthlyNormalCost = Math.round(baseFare * totalRides);
+      debugHtml += `<p><strong>1회당 요금:</strong> ${formatCurrency(baseFare)}</p><p><strong>기간 내 총 이용 횟수:</strong> ${totalRides}회</p><p><strong>일반 요금 계산:</strong> ${formatCurrency(baseFare)} × ${totalRides}회 = ${formatCurrency(monthlyNormalCost)}</p>`;
+      document.getElementById('debug-details').innerHTML = debugHtml;
+
+      document.getElementById('normal-cost').textContent = '일반 결제 예상 비용: ' + formatCurrency(monthlyNormalCost);
+      document.getElementById('climate-cost').textContent = '기후동행카드 비용: ' + formatCurrency(climateCardMonthly);
+
+      let adviceText = '';
+      if (monthlyNormalCost > climateCardMonthly) adviceText = `✔ 기후동행카드 사용 시 약 ${formatCurrency(monthlyNormalCost - climateCardMonthly)} 절약됩니다.`;
+      else if (monthlyNormalCost < climateCardMonthly) adviceText = `✔ 현재는 일반 결제가 더 경제적입니다 (월 약 ${formatCurrency(climateCardMonthly - monthlyNormalCost)} 추가 부담).`;
+      else adviceText = '✔ 두 방식의 비용이 거의 같습니다.';
+      document.getElementById('advice').textContent = adviceText;
+
+      document.getElementById('result').classList.remove('hidden');
+    });
+
+    document.getElementById('toggle-debug').addEventListener('click', function() {
+        const debugDetails = document.getElementById('debug-details');
+        const isHidden = debugDetails.classList.contains('hidden');
+        debugDetails.classList.toggle('hidden');
+        this.textContent = isHidden ? '숨기기' : '계산 과정 보기';
+    });
+
+    // Initial render
+    const today = new Date();
+    document.getElementById('start-date').value = toLocalDateString(today);
+    climateCardStartDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+  </script>
+</body>
+</html>
