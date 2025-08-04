@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>지하철 요금 계산기</title>
+  <meta name="google-adsense-account" content="[AdSense 승인 후 여기에 코드 입력]">
+  <title>지하철 요금 계산기 - 기후동행카드 vs 일반권</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-900">
@@ -13,9 +14,10 @@
       <p class="text-sm text-gray-700">일반 결제 vs. 기후동행카드 요금 비교하기</p>
     </header>
 
-    <div id="ad-top" class="mb-4"></div>
+    <div id="ad-top" class="mb-4 min-h-[50px]"></div>
 
     <form id="fare-form" class="bg-white p-4 rounded shadow">
+      <!-- ... 기존 form 내용은 동일 ... -->
       <div class="mb-3">
         <label class="block font-medium mb-1">계산 방식 선택</label>
         <div class="flex flex-wrap items-center">
@@ -73,18 +75,50 @@
       <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 mt-4">계산하기</button>
     </form>
 
-    <div id="result" class="mt-6 p-4 bg-blue-50 rounded border border-blue-200 hidden">
-      <p id="normal-cost" class="mb-1"></p>
-      <p id="climate-cost" class="mb-1"></p>
-      <p id="advice" class="font-bold mt-2"></p>
-      <button id="toggle-debug" class="text-sm text-blue-600 hover:underline mt-2">계산 과정 보기</button>
-      <div id="debug-details" class="hidden mt-3 pt-3 border-t border-blue-200 text-sm"></div>
+    <div id="result" class="mt-6 p-4 bg-blue-50 rounded border border-blue-200 hidden">...</div>
+
+    <div id="ad-bottom" class="mt-4 min-h-[50px]"></div>
+
+    <!-- 정보 섹션 추가 -->
+    <div class="mt-8 bg-white p-4 rounded shadow text-sm">
+        <h2 class="text-xl font-bold mb-3 text-center">계산기 사용 가이드 및 정보</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <h3 class="font-semibold text-md">🤔 어떤 계산 방식을 선택해야 할까요?</h3>
+                <ul class="list-disc list-inside mt-1 text-gray-700">
+                    <li><strong>일별:</strong> 매일 비슷한 횟수로 지하철을 이용할 때 빠르게 계산할 수 있습니다.</li>
+                    <li><strong>월별:</strong> 한 달 총 이용 횟수를 이미 알고 있거나 예측할 수 있을 때 사용하세요.</li>
+                    <li><strong>달력으로 선택:</strong> 불규칙한 이용 패턴을 가졌거나, 특정 기간의 요금을 정확히 계산하고 싶을 때 가장 유용합니다.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="font-semibold text-md">💡 기후동행카드, 이것만은 알고 쓰세요!</h3>
+                <ul class="list-disc list-inside mt-1 text-gray-700">
+                    <li><strong>사용 범위:</strong> 서울시내 지하철, 심야버스를 포함한 서울시 면허 버스, 그리고 따릉이까지 무제한 이용 가능합니다. (신분당선, 광역버스 등 일부 제외)</li>
+                    <li><strong>유효 기간:</strong> 충전 후 사용개시일을 선택하면 그날로부터 30일간 유효합니다.</li>
+                    <li><strong>따릉이 포함:</strong> 58,000원 권은 따릉이 1시간 이용권이 포함되어 있습니다. (55,000원 권은 미포함)</li>
+                    <li><strong>실물 카드 vs 모바일 카드:</strong> 안드로이드 사용자는 모바일 카드를, 아이폰 사용자는 실물 카드를 구매해야 합니다.</li>
+                </ul>
+            </div>
+
+             <div>
+                <h3 class="font-semibold text-md">💰 이 계산기는 어떻게 계산되나요?</h3>
+                <p class="mt-1 text-gray-700">본 계산기는 서울 지하철 기본요금(현재 1,550원 기준)을 바탕으로 총 이용 요금을 계산합니다. 추가 요금이 발생하는 장거리 이동이나 환승은 고려되지 않은 점 참고해 주세요. 가장 정확한 비교를 위해 '달력으로 선택' 방식을 사용하는 것을 권장합니다.</p>
+            </div>
+        </div>
     </div>
 
-    <div id="ad-bottom" class="mt-4"></div>
+    <footer class="text-center text-xs text-gray-500 mt-6 py-4 border-t">
+        <p>&copy; 2025 지하철 요금 계산기. All Rights Reserved.</p>
+        <a href="privacy.html" class="hover:underline">개인정보처리방침</a>
+    </footer>
+
   </div>
 
   <script>
+    // ... 기존 script 내용은 동일 ...
     const baseFare = 1550, climateCardMonthly = 58000;
     let currentDate = new Date();
     let selectedDates = {};
