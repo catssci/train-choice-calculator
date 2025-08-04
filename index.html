@@ -26,7 +26,6 @@
     <div id="ad-top" class="mb-4 min-h-[50px]"></div>
 
     <form id="fare-form" class="bg-white p-4 rounded shadow">
-      <!-- ... 기존 form 내용은 동일 ... -->
       <div class="mb-3">
         <label class="block font-medium mb-1">계산 방식 선택</label>
         <div class="flex flex-wrap items-center">
@@ -84,7 +83,13 @@
       <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 mt-4">계산하기</button>
     </form>
 
-    <div id="result" class="mt-6 p-4 bg-blue-50 rounded border border-blue-200 hidden">...</div>
+    <div id="result" class="mt-6 p-4 bg-blue-50 rounded border border-blue-200 hidden">
+      <p id="normal-cost" class="mb-1"></p>
+      <p id="climate-cost" class="mb-1"></p>
+      <p id="advice" class="font-bold mt-2"></p>
+      <button id="toggle-debug" class="text-sm text-blue-600 hover:underline mt-2">계산 과정 보기</button>
+      <div id="debug-details" class="hidden mt-3 pt-3 border-t border-blue-200 text-sm"></div>
+    </div>
 
     <div id="ad-bottom" class="mt-4 min-h-[50px]"></div>
 
@@ -127,7 +132,6 @@
   </div>
 
   <script>
-    // ... 기존 script 내용은 동일 ...
     const baseFare = 1550, climateCardMonthly = 58000;
     let currentDate = new Date();
     let selectedDates = {};
